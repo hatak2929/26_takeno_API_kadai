@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+<meta charset="UTF-8">
+<title>GoogleMap&ぐるなび</title>
+
+<script src="http://maps.google.com/maps/api/js?key=[googleAPIキーを入れる]&language=ja"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<style>
+html { height: 100% }
+body { height: 100% }
+#map { height: 100%; width: 100%}
+</style>
+</head>
+
+<body>
+<GoogleMap&ぐるなび id="title" style="width:0px;background:rgb(30, 160, 52);height:10px;font-size: 20px;">GoogleMap&ぐるなび</div>
+<div id="map"></div> 
+<div>
+    アクセスキーを入力<input id="key" value="[ ぐるなびAPIキーを入れる]" type="text" size="45">
+    <input type="button" id="btn" value="送信"><br>
+    緯度lat: <input type="text" id="lat" value="35.6702285">
+    経度lon: <input type="text" id="lon" value="139.7016728">
+
+
+    検索件数:<input type="text" id="hit" value="100">
+    フリーワード:<input type="text" id="free" value="餃子">
+</div>
+<table id="table">
+    <tr>
+        <th>店舗名</th>
+        <th>営業時間</th>
+        <th>URL</th>
+        <th>住所</th>
+        <th>電話番号</th>
+    </tr>
+</table>
+
+<script>
+var MyLatLng = new google.maps.LatLng(35.6811673, 139.7670516);
+var Options = {
+ zoom: 15,      //地図の縮尺値
+ center: MyLatLng,    //地図の中心座標
+ mapTypeId: 'roadmap'   //地図の種類
+};
+var map = new google.maps.Map(document.getElementById('map'), Options);
+
+let a = navigator.geolocation.getCurrentPosition(get_pos);
+function get_pos(position) {
+  let lat = position.coords.latitude;　// 緯度
+  let lng = position.coords.longitude; // 経度
+  let latLng = new google.maps.LatLng(lat, lng);
+  var marker = new google.maps.Marker({　// 現在地の位置設定とアイコンのカスタマイズ
+      position: latLng,
+      map: map,
+      icon: {
+        url: 'Octocat.png',
+        scaledSize: new google.maps.Size(40, 40)
+      }
+  });
+  map.setCenter(latLng);　// 地図の中央に現在地を表示する
+}
+
+//*****************************************************
+// Click Event
+// ぐるなびAPIへデータRequest → APIサーバーからresponseデータ取得 
+//*****************************************************
+$("#btn").on("click", function() {
+    //送信データをObject変数で用意
+    //参考URL:https://api.gnavi.co.jp/api/manual/restsearch/
+    const data = {
+        keyid:$("#key").val(),
+        latitude:$("#lat").val(),
+        longitude:$("#lon").val(),
+        hit_per_page:$("#hit").val(),
+        freeword:$("#free").val(),
+        range:5
+    };
+
+    //Ajax（非同期通信）
+    axios.get('https://api.gnavi.co.jp/RestSearchAPI/v3/', {
+        params:data
+    })
+    .then(function (response) {
+        //データ受信成功！！showData関数にデータを渡す
+        showData(response.data);
+    }).catch(function (error) {
+        console.log(error);//通信Error
+    }).then(function () {
+        //console.log("Last");//通信OK/Error後に処理を必ずさせたい場合
+    });
+});
+
+//*****************************************************
+//ぐるなびデータ表示処理
+//*****************************************************
+function showData(data){
+    //データ確認用
+    console.log(data.rest);
+
+    //データを繰り返し処理で取得
+    const len  = data.rest.length; //データ数を取得
+    for( let i=0; i<len; i++){
+        $("#table").append('<tr><td>' + data.rest[i].name + '</td><td>' + data.rest[i].opentime + '</td><td>' + data.rest[i].url + '</td><td>' + data.rest[i].address + '</td><td>' + data.rest[i].tel + '</td></tr>');
+    };
+}
+
+</script>
+
+</body>
+</html>
